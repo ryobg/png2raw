@@ -9,7 +9,7 @@ Format:
 Example:
 `png2raw my.png my.r8 "#00C080" 0 "#FFCC00" 1 "#808080" 2`
 
-# png-remap
+# remap-png
 
 Maps a PNG file with pixel values 0 to N, to RGBA colors listed on 0 to N rows in text file. Outputs
 an RGBA PNG file as result. Basically, it is kind of pixel precise color remapper. This is useful
