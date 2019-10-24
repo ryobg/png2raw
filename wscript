@@ -23,4 +23,5 @@ def configure(conf):
 
 def build(bld):
     bld.program(target=APPNAME, source="png2raw.cpp lodepng.cpp")
+    bld.program(target='remap-png', source="remap-png.cpp lodepng.cpp")
 
