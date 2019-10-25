@@ -42,6 +42,8 @@ struct lodepng_raster
 
 //--------------------------------------------------------------------------------------------------
 
+/// Compatible with: https://imagemagick.org/Usage/files/#txt
+
 static std::vector<std::uint32_t>
 read_map_file (const char* path)
 {
@@ -51,32 +53,36 @@ read_map_file (const char* path)
 
     size_t total = 0;
     ifstream fi (path);
+
     for (string line; getline (fi, line); ++total)
     {
         auto n = line.find ('#');
         if (string::npos == n)
             continue;
+
         uint32_t v;
         try {
-            v = static_cast<uint32_t> (stoll (line.substr (n+1), nullptr, 16));
-            std::reverse ((uint8_t*) &v, ((uint8_t*) &v) + 4);
+            v = uint32_t (stoll (line.substr (n+1), nullptr, 16));
+            std::reverse ((uint8_t*) &v, ((uint8_t*) &v) + sizeof v);
         }
         catch (std::exception const&) {
             continue;
         }
+
         out.push_back (v);
     }
 
     cout << "Found " << out.size () << " hex colors out of " << total << " text lines." << endl;
     if (out.empty ())
         throw std::runtime_error ("No colors to remap with. Bailing out.");
+
     return out;
 }
 
 //--------------------------------------------------------------------------------------------------
 
 [[noreturn]] static void
-throw_lodpng_error (unsigned error)
+throw_lodepng_error (unsigned error)
 {
     throw std::runtime_error (
             std::string ("LodePNG decoder error #") + std::to_string (error) +
@@ -109,7 +115,7 @@ read_input_raster (const char* path)
         if (error)
         {
             free_locals ();
-            throw_lodpng_error (error);
+            throw_lodepng_error (error);
         }
     };
 
@@ -141,8 +147,9 @@ read_input_raster (const char* path)
     {
         uint8_t const* src = &image[i * pixel_size];
         uint32_t v = 0;
+        uint8_t* pv = reinterpret_cast<uint8_t*> (&v);
         for (int c = 0; c < num_channels; ++c)
-            std::reverse_copy (&src[c], &src[c] + out.depth / 8, &((uint8_t*) &v)[c]);
+            pv = std::reverse_copy (&src[c], &src[c] + out.depth / 8, pv);
         out.data[i] = v;
     }
 
@@ -150,7 +157,7 @@ read_input_raster (const char* path)
 
     cout << "Decoded " << out.width << "x" << out.height << " " << original_depth << "-bit ";
     switch (out.type) {
-        case LCT_GREY: cout << "1 channel (grayscale)"; break;
+        case LCT_GREY: cout << "1 channel (greyscale)"; break;
         case LCT_RGB: cout << "3 channels (rgb)"; break;
         case LCT_PALETTE : cout << " 1 channel (indexed)"; break;
         case LCT_GREY_ALPHA: cout << "2 channels (grey-alpha)"; break;
@@ -187,7 +194,7 @@ static void
 write_output (lodepng_raster& out, const char* path)
 {
     auto e = lodepng_encode32_file (path, (uint8_t const*) out.data.data (), out.width, out.height);
-    if (e) throw_lodpng_error (e);
+    if (e) throw_lodepng_error (e);
 }
 
 //--------------------------------------------------------------------------------------------------
